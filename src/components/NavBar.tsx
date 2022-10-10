@@ -27,6 +27,7 @@ export const NavBar: React.FC<{}> = () => {
     //user is logged in
   } else {
     body = <Flex>
+      {/*type generation error */}
       <Box mr={2}>{data?.me?.username}</Box>
       <Button variant={'link'}>logout</Button>
       </Flex>;
