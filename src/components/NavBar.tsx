@@ -6,7 +6,8 @@ import { isServer } from "../utils/isServer";
 export const NavBar: React.FC<{}> = () => {
   const [{ fetching: logoutFetching }, logout] = useLogoutMutation();
   const [{ data, fetching }] = useMeQuery(
-    // { pause: isServer() } // causing hydration error
+    // { pause: isServer() }
+    // causing hydration error
     );
   let body;
 
