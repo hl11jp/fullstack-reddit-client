@@ -212,15 +212,15 @@ export const LoginDocument = gql`
     mutation Login($usernameOrEmail: String!, $password: String!) {
   login(usernameOrEmail: $usernameOrEmail, password: $password) {
     errors {
-      field
-      message
+      ...error
     }
     user {
       ...user
     }
   }
 }
-    ${UserFragmentDoc}`;
+    ${ErrorFragmentDoc}
+${UserFragmentDoc}`;
 
 export function useLoginMutation() {
   return Urql.useMutation<LoginMutation, LoginMutationVariables>(LoginDocument);
@@ -238,15 +238,15 @@ export const RegisterDocument = gql`
     mutation Register($options: UsernamePasswordInput!) {
   register(options: $options) {
     errors {
-      field
-      message
+      ...error
     }
     user {
       ...user
     }
   }
 }
-    ${UserFragmentDoc}`;
+    ${ErrorFragmentDoc}
+${UserFragmentDoc}`;
 
 export function useRegisterMutation() {
   return Urql.useMutation<RegisterMutation, RegisterMutationVariables>(RegisterDocument);
