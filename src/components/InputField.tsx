@@ -15,7 +15,8 @@ type InputFieldProps = InputHTMLAttributes<HTMLInputElement> & {
 };
 
 export const InputField: React.FC<InputFieldProps> = ({label, textarea ,size: _, ...props}) => {
-  let InputOrTextarea = Input;
+  //cast to any because the type is not the same!
+  let InputOrTextarea = Input as any;
   if (textarea) {
     InputOrTextarea = Textarea;
   }
