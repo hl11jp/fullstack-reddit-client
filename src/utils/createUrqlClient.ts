@@ -58,7 +58,7 @@ export const cursorPagination = (): Resolver => {
     });
 
     return {
-      __typename: 'PaginatedPosts',
+      __typename: "PaginatedPosts",
       hasMore,
       posts: result,
     };
@@ -136,6 +136,23 @@ export const createUrqlClient = (ssrExchange: any) => ({
       },
       updates: {
         Mutation: {
+          createPost: (result, args, cache, info) => {
+            //invalidate the cache so new post always on top without refreshing the page
+            const allFields = cache.inspectFields("Query");
+            const fieldInfos = allFields.filter(
+              (info) => info.fieldName === "posts"
+            );
+            fieldInfos.forEach((fi) => {
+              cache.invalidate("Query", "posts", fi.arguments || {});
+            });
+
+            /**
+             * this method below will only works when user did not press load more
+             */
+            // cache.invalidate("Query", "posts", {
+            //   limit: 10
+            // })
+          },
           logout: (result, args, cache, info) => {
             betterUpdateQuery<LogoutMutation, MeQuery>(
               cache,

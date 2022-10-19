@@ -33,7 +33,6 @@ export const NavBar: React.FC<{}> = () => {
   } else {
     body = (
       <Flex>
-        {/*type generation error */}
         <Box mr={2}>{data?.me?.username}</Box>
         <Button
           onClick={() => {

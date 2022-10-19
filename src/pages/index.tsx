@@ -1,6 +1,6 @@
 import { withUrqlClient } from "next-urql";
 import { createUrqlClient } from "../utils/createUrqlClient";
-import { usePostsQuery } from "../graphql/generated/index";
+import { PostsDocument, usePostsQuery } from "../graphql/generated/index";
 import { Layout } from "../components/Layout";
 import NextLink from "next/link";
 import { Box, Button, Flex, Heading, Link, Stack, Text } from "@chakra-ui/react";
@@ -30,7 +30,7 @@ const Index = () => {
         <Stack>
           {data.posts.posts.map((post) => (
             <Box key={post.id} p={5} shadow="md" borderWidth="1px">
-              <Heading fontSize="xl">{post.title}</Heading>
+              <Heading fontSize="xl">{post.title}</Heading> <Text>posted by {post.creator.username}</Text>
               <Text mt={4}>{post.textSnippet}</Text>
             </Box>
             // <div key={post.id}>{post.title}</div>
