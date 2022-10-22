@@ -10,11 +10,13 @@ import {
   MeDocument,
   LoginMutation,
   RegisterMutation,
+  VoteMutationVariables,
 } from "../graphql/generated/index";
 import { cacheExchange, Resolver } from "@urql/exchange-graphcache";
 import { betterUpdateQuery } from "./betterUpdateQuery";
 import { pipe, tap } from "wonka";
 import Router from "next/router";
+import { gql } from '@urql/core';
 
 const errorExchange: Exchange =
   ({ forward }) =>
@@ -33,7 +35,6 @@ export const cursorPagination = (): Resolver => {
   return (_parent, fieldArgs, cache, info) => {
     const { parentKey: entityKey, fieldName } = info;
     const allFields = cache.inspectFields(entityKey);
-    console.log(allFields);
     const fieldInfos = allFields.filter((info) => info.fieldName === fieldName);
     const size = fieldInfos.length;
     if (size === 0) {
@@ -136,6 +137,37 @@ export const createUrqlClient = (ssrExchange: any) => ({
       },
       updates: {
         Mutation: {
+          vote: (result, args, cache, info) => {
+            const {postId, value} = args as VoteMutationVariables;
+            //enplain at 9:51:53
+            const data = cache.readFragment(
+              gql`
+                fragment _ on Post {
+                  id
+                  points
+                  voteStatus
+                }
+              `,
+              {id: postId}
+            )
+
+            if (data) {
+              //if voteStatus === 1 and vote with value === 1 -> dont do anything
+              if (data.voteStatus === value) {
+                return;
+              }
+              const newPoints = data.points + ((!data.voteStatus ? 1 : 2 ) * value);
+              cache.writeFragment(
+                gql`
+                  fragment __ on Post {
+                    points
+                    voteStatus
+                  }
+                `,
+                {id: postId, points: newPoints, voteStatus: value}
+              )
+            }
+          },
           createPost: (result, args, cache, info) => {
             //invalidate the cache so new post always on top without refreshing the page
             const allFields = cache.inspectFields("Query");

@@ -6,7 +6,7 @@ import { useLogoutMutation, useMeQuery } from "../graphql/generated/index";
 export const NavBar: React.FC<{}> = () => {
   const [{ fetching: logoutFetching }, logout] = useLogoutMutation();
   const [{ data, fetching }] = useMeQuery(
-    // { pause: isServer() }
+    // { skip: isServer() }
     // causing hydration error
     );
   let body;
