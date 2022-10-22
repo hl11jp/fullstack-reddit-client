@@ -1,1 +1,8 @@
 explain at 4:05:49
+
+
+9:51:57 SSR Cookie Forwarding
+SSR:
+  browser -> next.js -> graphql api
+CSR:
+  browser -> graphql api

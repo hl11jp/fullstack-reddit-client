@@ -16,7 +16,8 @@ import { cacheExchange, Resolver } from "@urql/exchange-graphcache";
 import { betterUpdateQuery } from "./betterUpdateQuery";
 import { pipe, tap } from "wonka";
 import Router from "next/router";
-import { gql } from '@urql/core';
+import { gql } from "@urql/core";
+import { isServer } from "./isServer";
 
 const errorExchange: Exchange =
   ({ forward }) =>
@@ -118,121 +119,137 @@ export const cursorPagination = (): Resolver => {
   };
 };
 
-export const createUrqlClient = (ssrExchange: any) => ({
-  url: "http://localhost:3000/graphql",
-  fetchOptions: {
-    credentials: "include" as const,
-    headers: { "X-Forwarded-Proto": "https" },
-  },
-  exchanges: [
-    dedupExchange,
-    cacheExchange({
-      keys: {
-        PaginatedPosts: () => null,
-      },
-      resolvers: {
-        Query: {
-          posts: cursorPagination(),
-        },
-      },
-      updates: {
-        Mutation: {
-          vote: (result, args, cache, info) => {
-            const {postId, value} = args as VoteMutationVariables;
-            //enplain at 9:51:53
-            const data = cache.readFragment(
-              gql`
-                fragment _ on Post {
-                  id
-                  points
-                  voteStatus
-                }
-              `,
-              {id: postId}
-            )
+export const createUrqlClient = (ssrExchange: any, ctx: any) => {
+  //wrap the code in curly braces to be able to use console.log
+  let cookie = "";
+  /**
+   * the reason for this is nextjs is not sending the cookie to graphql api
+   * -> this cause username will not display after reload
+   */
+  if (isServer() && ctx.req.headers.cookie != null) {
+    cookie = ctx.req.headers.cookie;
+  }
 
-            if (data) {
-              //if voteStatus === 1 and vote with value === 1 -> dont do anything
-              if (data.voteStatus === value) {
-                return;
-              }
-              const newPoints = data.points + ((!data.voteStatus ? 1 : 2 ) * value);
-              cache.writeFragment(
+  return {
+    url: "http://localhost:3000/graphql",
+    fetchOptions: {
+      credentials: "include" as const,
+      headers: {
+        "X-Forwarded-Proto": "https",
+        cookie: cookie ? cookie : undefined,
+      },
+    },
+    exchanges: [
+      dedupExchange,
+      cacheExchange({
+        keys: {
+          PaginatedPosts: () => null,
+        },
+        resolvers: {
+          Query: {
+            posts: cursorPagination(),
+          },
+        },
+        updates: {
+          Mutation: {
+            vote: (result, args, cache, info) => {
+              const { postId, value } = args as VoteMutationVariables;
+              //enplain at 9:51:53
+              const data = cache.readFragment(
                 gql`
-                  fragment __ on Post {
+                  fragment _ on Post {
+                    id
                     points
                     voteStatus
                   }
                 `,
-                {id: postId, points: newPoints, voteStatus: value}
-              )
-            }
-          },
-          createPost: (result, args, cache, info) => {
-            //invalidate the cache so new post always on top without refreshing the page
-            const allFields = cache.inspectFields("Query");
-            const fieldInfos = allFields.filter(
-              (info) => info.fieldName === "posts"
-            );
-            fieldInfos.forEach((fi) => {
-              cache.invalidate("Query", "posts", fi.arguments || {});
-            });
+                { id: postId }
+              );
 
-            /**
-             * this method below will only works when user did not press load more
-             */
-            // cache.invalidate("Query", "posts", {
-            //   limit: 10
-            // })
-          },
-          logout: (result, args, cache, info) => {
-            betterUpdateQuery<LogoutMutation, MeQuery>(
-              cache,
-              { query: MeDocument },
-              result,
-              () => ({ me: null })
-            );
-          },
-
-          login: (result, args, cache, info) => {
-            betterUpdateQuery<LoginMutation, MeQuery>(
-              cache,
-              { query: MeDocument },
-              result,
-              (result, query) => {
-                if (result.login.errors) {
-                  return query;
-                } else {
-                  return {
-                    me: result.login.user,
-                  };
+              if (data) {
+                //if voteStatus === 1 and vote with value === 1 -> dont do anything
+                if (data.voteStatus === value) {
+                  return;
                 }
+                const newPoints =
+                  data.points + (!data.voteStatus ? 1 : 2) * value;
+                cache.writeFragment(
+                  gql`
+                    fragment __ on Post {
+                      points
+                      voteStatus
+                    }
+                  `,
+                  { id: postId, points: newPoints, voteStatus: value }
+                );
               }
-            );
-          },
+            },
+            createPost: (result, args, cache, info) => {
+              //invalidate the cache so new post always on top without refreshing the page
+              const allFields = cache.inspectFields("Query");
+              const fieldInfos = allFields.filter(
+                (info) => info.fieldName === "posts"
+              );
+              fieldInfos.forEach((fi) => {
+                cache.invalidate("Query", "posts", fi.arguments || {});
+              });
 
-          //where is the result comes from??
-          register: (_result, args, cache, info) => {
-            betterUpdateQuery<RegisterMutation, MeQuery>(
-              cache,
-              { query: MeDocument },
-              _result,
-              (result, query) => {
-                if (result.register.errors) {
-                  return query;
-                } else {
-                  return {
-                    me: result.register.user,
-                  };
+              /**
+               * this method below will only works when user did not press load more
+               */
+              // cache.invalidate("Query", "posts", {
+              //   limit: 10
+              // })
+            },
+            logout: (result, args, cache, info) => {
+              betterUpdateQuery<LogoutMutation, MeQuery>(
+                cache,
+                { query: MeDocument },
+                result,
+                () => ({ me: null })
+              );
+            },
+
+            login: (result, args, cache, info) => {
+              betterUpdateQuery<LoginMutation, MeQuery>(
+                cache,
+                { query: MeDocument },
+                result,
+                (result, query) => {
+                  if (result.login.errors) {
+                    return query;
+                  } else {
+                    return {
+                      me: result.login.user,
+                    };
+                  }
                 }
-              }
-            );
+              );
+            },
+
+            //where is the result comes from??
+            register: (_result, args, cache, info) => {
+              betterUpdateQuery<RegisterMutation, MeQuery>(
+                cache,
+                { query: MeDocument },
+                _result,
+                (result, query) => {
+                  if (result.register.errors) {
+                    return query;
+                  } else {
+                    return {
+                      me: result.register.user,
+                    };
+                  }
+                }
+              );
+            },
           },
         },
-      },
-    }),
-    errorExchange,
-    ssrExchange,
-    fetchExchange,
-  ],
-});
+      }),
+      errorExchange,
+      ssrExchange,
+      fetchExchange,
+    ],
+  };
+};
