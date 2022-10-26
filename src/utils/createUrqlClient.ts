@@ -119,14 +119,14 @@ export const cursorPagination = (): Resolver => {
   };
 };
 
-export const createUrqlClient = (ssrExchange: any, ctx: any) => {
+export const createUrqlClient = (ssrExchange?: any, ctx?: any) => {
   //wrap the code in curly braces to be able to use console.log
   let cookie = "";
   /**
    * the reason for this is nextjs is not sending the cookie to graphql api
    * -> this cause username will not display after reload
    */
-  if (isServer() && ctx.req.headers.cookie != null) {
+  if (isServer() && ctx?.req.headers.cookie != null) {
     cookie = ctx.req.headers.cookie;
   }
 

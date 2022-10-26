@@ -1,12 +1,14 @@
-import { Box, Button, Flex, Link } from "@chakra-ui/react";
+import { Box, Button, Flex, Heading, Link } from "@chakra-ui/react";
 import NextLink from "next/link";
 import { useLogoutMutation, useMeQuery } from "../graphql/generated/index";
+import { isServer } from "../utils/isServer";
 // import { isServer } from "../utils/isServer";
 
 export const NavBar: React.FC<{}> = () => {
   const [{ fetching: logoutFetching }, logout] = useLogoutMutation();
   const [{ data, fetching }] = useMeQuery(
-    // { skip: isServer() }
+    // { pause: isServer() }
+    //10:02:00
     // causing hydration error
     );
   let body;
@@ -47,7 +49,12 @@ export const NavBar: React.FC<{}> = () => {
     );
   }
   return (
-    <Flex bg="tomato" p={4}>
+    <Flex bg="tomato" p={4} zIndex={1} position={"sticky"} align="center">
+      <NextLink href="/">
+        <Link>
+          <Heading>LiReddit</Heading>
+        </Link>
+      </NextLink>
       <Box ml={"auto"}>{body}</Box>
     </Flex>
   );
