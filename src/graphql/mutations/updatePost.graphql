@@ -1,0 +1,9 @@
+mutation updatePost($id: Int!, $text: String!, $title: String!) {
+  updatePost(id: $id , text: $text, title: $title) {
+    id
+    text
+    title
+    textSnippet
+  }
+  # because this gave a post object back so urql will automatically update the cache
+}
