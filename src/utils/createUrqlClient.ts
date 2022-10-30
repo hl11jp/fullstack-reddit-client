@@ -13,7 +13,7 @@ import {
   VoteMutationVariables,
   DeletePostMutationVariables,
 } from "../graphql/generated/index";
-import { cacheExchange, Resolver } from "@urql/exchange-graphcache";
+import { cacheExchange, Resolver, Cache } from "@urql/exchange-graphcache";
 import { betterUpdateQuery } from "./betterUpdateQuery";
 import { pipe, tap } from "wonka";
 import Router from "next/router";
@@ -120,6 +120,16 @@ export const cursorPagination = (): Resolver => {
   };
 };
 
+const invalidateAllPosts = (cache: Cache) => {
+  const allFields = cache.inspectFields("Query");
+  const fieldInfos = allFields.filter(
+    (info) => info.fieldName === "posts"
+  );
+  fieldInfos.forEach(fi => {
+    cache.invalidate("Query", "posts", fi.arguments || {});
+  })
+}
+
 export const createUrqlClient = (ssrExchange?: any, ctx?: any) => {
   //wrap the code in curly braces to be able to use console.log
   let cookie = "";
@@ -190,13 +200,7 @@ export const createUrqlClient = (ssrExchange?: any, ctx?: any) => {
             },
             createPost: (result, args, cache, info) => {
               //invalidate the cache so new post always on top without refreshing the page
-              const allFields = cache.inspectFields("Query");
-              const fieldInfos = allFields.filter(
-                (info) => info.fieldName === "posts"
-              );
-              fieldInfos.forEach((fi) => {
-                cache.invalidate("Query", "posts", fi.arguments || {});
-              });
+              invalidateAllPosts(cache);
 
               /**
                * this method below will only works when user did not press load more
@@ -229,6 +233,7 @@ export const createUrqlClient = (ssrExchange?: any, ctx?: any) => {
                   }
                 }
               );
+              invalidateAllPosts(cache);
             },
 
             //where is the result comes from??
